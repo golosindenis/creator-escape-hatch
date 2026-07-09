@@ -37,13 +37,22 @@ export async function POST(req: NextRequest) {
   const body = typeof data.text === "string" ? data.text : typeof data.html === "string" ? data.html : "";
 
   const pageId = extractPageId(to);
-  if (!pageId) return NextResponse.json({ ok: true });
+  if (!pageId) {
+    console.warn("inbound-email: no page id found in recipients", { to });
+    return NextResponse.json({ ok: true });
+  }
 
   const page = await getPageById(pageId);
-  if (!page) return NextResponse.json({ ok: true });
+  if (!page) {
+    console.warn("inbound-email: no page found for id", { pageId });
+    return NextResponse.json({ ok: true });
+  }
 
   const classification = classifyAlert({ from, subject, body });
-  if (!classification) return NextResponse.json({ ok: true });
+  if (!classification) {
+    console.warn("inbound-email: could not classify message", { pageId, from, subject });
+    return NextResponse.json({ ok: true });
+  }
 
   await recordBreachAlert(page.id, classification.type);
 
@@ -54,7 +63,13 @@ export async function POST(req: NextRequest) {
       alertType: classification.type,
       dashboardUrl,
     });
-    await sendBroadcast({ to: [page.secondaryEmail], subject: notice.subject, body: notice.body });
+    const result = await sendBroadcast({ to: [page.secondaryEmail], subject: notice.subject, body: notice.body });
+    if (result.sent === 0) {
+      // Resend resolves per-email rather than rejecting, so a failed send never
+      // throws. We don't retry here (retrying would re-run recordBreachAlert
+      // above and duplicate the row) — just make the failure visible.
+      console.error("inbound-email: breach alert notification failed to send", { pageId: page.id });
+    }
   }
 
   return NextResponse.json({ ok: true });
