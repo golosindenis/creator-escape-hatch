@@ -1,5 +1,7 @@
 "use client";
 import { useState } from "react";
+import { AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 
 export function BreakGlassButton({ active }: { active: boolean }) {
   const [on, setOn] = useState(active);
@@ -15,9 +17,14 @@ export function BreakGlassButton({ active }: { active: boolean }) {
     setBusy(false);
   }
   return (
-    <button onClick={toggle} disabled={busy}
-      className={`mt-6 rounded p-3 text-white ${on ? "bg-gray-600" : "bg-red-600"}`}>
-      {on ? "Deactivate break-glass" : "🚨 Activate break-glass — alert my subscribers"}
-    </button>
+    <Button
+      onClick={toggle}
+      disabled={busy}
+      variant={on ? "ghost" : "danger"}
+      className="mt-4 flex items-center justify-center gap-2"
+    >
+      {!on && <AlertTriangle size={16} aria-hidden="true" />}
+      {on ? "Deactivate break-glass" : "Activate break-glass — alert my subscribers"}
+    </Button>
   );
 }

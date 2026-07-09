@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { Button } from "@/components/ui/Button";
 
 export function SecondaryEmailForm({ initialEmail }: { initialEmail: string }) {
   const [email, setEmail] = useState(initialEmail);
@@ -18,12 +19,18 @@ export function SecondaryEmailForm({ initialEmail }: { initialEmail: string }) {
 
   return (
     <form onSubmit={submit} className="mt-4 flex flex-col gap-3">
-      <label className="text-sm font-medium">Secondary email (for alerts)</label>
-      <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-        placeholder="you@personalemail.com" className="rounded border p-2" />
-      <button className="rounded bg-black p-2 text-white">Save</button>
-      {status === "saved" && <p className="text-sm text-green-700">Saved.</p>}
-      {status === "error" && <p className="text-sm text-red-600">Please check your email address.</p>}
+      <label className="text-sm font-medium text-secondary">Secondary email (for alerts)</label>
+      <input
+        type="email"
+        required
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="you@personalemail.com"
+        className="rounded-lg border border-border bg-surface-2 p-2.5 text-sm text-primary placeholder:text-muted focus:border-border-strong focus:outline-none"
+      />
+      <Button type="submit" variant="ghost">Save</Button>
+      {status === "saved" && <p className="text-sm text-accent">Saved.</p>}
+      {status === "error" && <p className="text-sm text-danger">Please check your email address.</p>}
     </form>
   );
 }
