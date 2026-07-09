@@ -7,7 +7,7 @@ import { sendBroadcast } from "@/lib/email/resend";
 
 function extractPageId(to: string[]): string | null {
   for (const addr of to) {
-    const match = addr.match(/alerts\+([0-9a-f-]{36})@/i);
+    const match = addr.match(/alerts\+([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})@/i);
     if (match) return match[1];
   }
   return null;
