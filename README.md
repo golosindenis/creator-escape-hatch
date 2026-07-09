@@ -26,6 +26,8 @@ Required environment variables:
 - `RESEND_API_KEY` — Your Resend API key for email broadcasting
 - `NEXT_PUBLIC_APP_URL` — The app's public URL (e.g., `http://localhost:3000` locally; your Vercel URL in production)
 - `BROADCAST_FROM` — A Resend-verified sender email address
+- `RESEND_WEBHOOK_SECRET` — The signing secret for the Resend inbound-email webhook (used to verify svix signatures on `/api/inbound-email`)
+- `NEXT_PUBLIC_INBOUND_EMAIL_DOMAIN` — The verified inbound domain that receives forwarded security emails (e.g., `inbound.yourdomain.com`)
 
 ### Database
 
@@ -39,6 +41,23 @@ This creates three tables:
 - `pages` — creator capture pages (slug, creator name, handle, break-glass status)
 - `subscribers` — subscriber emails for each page
 - `break_glass_events` — emergency activation logs
+
+### Breach alerts
+
+Creators can forward Instagram's own "new login" / "password changed" security emails to a per-page address, and the app will detect them and notify a secondary email — without ever touching Instagram credentials or APIs.
+
+Setup (one-time, per deployment):
+
+1. In the Resend dashboard, add and verify an inbound domain (e.g. `inbound.yourdomain.com`) and point its MX records per Resend's instructions.
+2. Set the domain's inbound webhook URL to `https://<your-app>/api/inbound-email`.
+3. Copy the webhook's signing secret into `RESEND_WEBHOOK_SECRET`, and set `NEXT_PUBLIC_INBOUND_EMAIL_DOMAIN` to the verified domain.
+
+Per-creator setup (done by the creator, in their own Instagram account):
+
+1. Log in to the dashboard and set a secondary email; the dashboard will show a unique forwarding address for the page.
+2. In Instagram, go to Settings → Security → Emails from Instagram, and add that forwarding address as a recipient for security emails.
+
+This only configures a forwarding rule inside the creator's own Instagram account — the app never receives or stores an Instagram password or API credential, and cannot recover a compromised account. It can only detect Instagram's own alert emails once forwarded and notify the creator so they can act.
 
 ### Local Development
 
