@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { Button } from "@/components/ui/Button";
 
 export function SubscribeForm({ slug }: { slug: string }) {
   const [email, setEmail] = useState("");
@@ -16,13 +17,19 @@ export function SubscribeForm({ slug }: { slug: string }) {
     setStatus(data.ok || data.reason === "duplicate" ? "ok" : "error");
   }
 
-  if (status === "ok") return <p className="mt-6">You&apos;re on the list. Thank you!</p>;
+  if (status === "ok") return <p className="mt-6 text-sm text-secondary">You&apos;re on the list. Thank you!</p>;
   return (
     <form onSubmit={submit} className="mt-6 flex flex-col gap-3">
-      <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-        placeholder="you@email.com" className="rounded border p-2" />
-      <button className="rounded bg-black p-2 text-white">Keep me updated</button>
-      {status === "error" && <p className="text-sm text-red-600">Please check your email address.</p>}
+      <input
+        type="email"
+        required
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="you@email.com"
+        className="rounded-lg border border-border bg-surface-2 p-2.5 text-sm text-primary placeholder:text-muted focus:border-border-strong focus:outline-none"
+      />
+      <Button type="submit">Keep me updated</Button>
+      {status === "error" && <p className="text-sm text-danger">Please check your email address.</p>}
     </form>
   );
 }
