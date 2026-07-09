@@ -7,16 +7,19 @@ export type Page = {
   creatorName: string;
   realHandle: string;
   breakGlassActive: boolean;
+  secondaryEmail: string | null;
 };
 
 type Row = {
   id: string; slug: string; creator_name: string;
   real_handle: string; break_glass_active: boolean;
+  secondary_email: string | null;
 };
 
 const toPage = (r: Row): Page => ({
   id: r.id, slug: r.slug, creatorName: r.creator_name,
   realHandle: r.real_handle, breakGlassActive: r.break_glass_active,
+  secondaryEmail: r.secondary_email,
 });
 
 export async function getPageBySlug(slug: string): Promise<Page | null> {
@@ -42,5 +45,18 @@ export async function createPage(
 export async function setBreakGlass(pageId: string, active: boolean): Promise<void> {
   const { error } = await serviceClient()
     .from("pages").update({ break_glass_active: active }).eq("id", pageId);
+  if (error) throw error;
+}
+
+export async function getPageById(pageId: string): Promise<Page | null> {
+  const { data, error } = await serviceClient()
+    .from("pages").select("*").eq("id", pageId).maybeSingle();
+  if (error) throw error;
+  return data ? toPage(data as Row) : null;
+}
+
+export async function setSecondaryEmail(pageId: string, email: string): Promise<void> {
+  const { error } = await serviceClient()
+    .from("pages").update({ secondary_email: email }).eq("id", pageId);
   if (error) throw error;
 }
