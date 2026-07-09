@@ -31,6 +31,14 @@ export async function POST(req: NextRequest) {
       const result = await sendBroadcast({ to: emails, subject: msg.subject, body: msg.body });
       recipientCount = result.sent;
 
+      if (emails.length > 0 && recipientCount === 0) {
+        // Every send failed (bad API key, Resend outage, etc). Resend's SDK
+        // resolves per-email rather than rejecting, so this wouldn't otherwise
+        // surface as an error. Treat it as one so we never activate the page
+        // while claiming subscribers were alerted when none were.
+        throw new Error("all_sends_failed");
+      }
+
       await serviceClient().from("break_glass_events")
         .insert({ page_id: page.id, activated: true, recipient_count: recipientCount });
 
