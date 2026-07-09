@@ -20,8 +20,9 @@ const toPage = (r: Row): Page => ({
 });
 
 export async function getPageBySlug(slug: string): Promise<Page | null> {
-  const { data } = await serviceClient()
+  const { data, error } = await serviceClient()
     .from("pages").select("*").eq("slug", slug).maybeSingle();
+  if (error) throw error;
   return data ? toPage(data as Row) : null;
 }
 
