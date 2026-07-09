@@ -5,12 +5,18 @@ import { browserClient } from "@/lib/supabase/browser";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   async function send(e: React.FormEvent) {
     e.preventDefault();
-    await browserClient().auth.signInWithOtp({
+    setError(null);
+    const { error } = await browserClient().auth.signInWithOtp({
       email,
       options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback` },
     });
+    if (error) {
+      setError(error.message && error.message !== "{}" ? error.message : "Couldn't send the login email. Please try again in a moment.");
+      return;
+    }
     setSent(true);
   }
   if (sent) return <main className="p-8">Check your email for a login link.</main>;
@@ -22,6 +28,7 @@ export default function Login() {
           placeholder="you@email.com" className="rounded border p-2" />
         <button className="rounded bg-black p-2 text-white">Send magic link</button>
       </form>
+      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
     </main>
   );
 }
