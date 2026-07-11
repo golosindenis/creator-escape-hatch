@@ -1,14 +1,16 @@
 import { redirect } from "next/navigation";
-import { ShieldCheck } from "lucide-react";
 import { getSessionUser } from "@/lib/auth";
 import { serviceClient } from "@/lib/supabase/server";
 import { listBreachAlerts } from "@/lib/data/breachAlerts";
+import { listSubscriberEmails } from "@/lib/data/subscribers";
+import { protectionLabel, subscriberCountLabel, secondaryAlertsLabel } from "@/lib/dashboardStatus";
 import { Shell } from "@/components/ui/Shell";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { CreatePageForm } from "./create-page-form";
 import { BreakGlassButton } from "./break-glass-button";
 import { SecondaryEmailForm } from "./secondary-email-form";
+import { DashboardHeader } from "./dashboard-header";
 
 const ALERT_LABELS: Record<string, string> = {
   new_login: "New login detected",
@@ -22,6 +24,7 @@ export default async function Dashboard() {
   if (!data) {
     return (
       <Shell>
+        <DashboardHeader email={user.email} />
         <Card>
           <CreatePageForm />
         </Card>
@@ -32,15 +35,19 @@ export default async function Dashboard() {
   const inboundDomain = process.env.NEXT_PUBLIC_INBOUND_EMAIL_DOMAIN ?? "example.com";
   const forwardAddress = `alerts+${data.id}@${inboundDomain}`;
   const alerts = await listBreachAlerts(data.id);
+  const subscriberCount = (await listSubscriberEmails(data.id)).length;
 
   return (
     <Shell className="max-w-lg">
-      <div className="mb-8 flex items-center gap-2">
-        <ShieldCheck className="text-accent" size={24} aria-hidden="true" />
-        <span className="text-base font-medium">AccountGuard</span>
-      </div>
+      <DashboardHeader email={user.email} />
 
-      <Card>
+      <p className="text-sm text-secondary">Your escape hatch if Instagram goes down.</p>
+      <p className="mt-2 text-sm text-secondary">
+        {protectionLabel(data.break_glass_active)} · {subscriberCountLabel(subscriberCount)} ·{" "}
+        {secondaryAlertsLabel(data.secondary_email)}
+      </p>
+
+      <Card className="mt-6">
         <h1 className="text-lg font-medium">Your lifeline page</h1>
         <p className="mt-2 text-sm text-secondary">
           Public link: <code className="rounded bg-surface-2 px-1.5 py-0.5 text-primary">/p/{data.slug}</code>
@@ -73,6 +80,22 @@ export default async function Dashboard() {
             </ul>
           </div>
         )}
+      </Card>
+
+      <Card className="mt-6 border-dashed opacity-60">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-medium">Content &amp; metrics backup</h2>
+          <Badge>Coming soon</Badge>
+        </div>
+        <p className="mt-2 text-sm text-secondary">Auto-archive your posts and growth history.</p>
+      </Card>
+
+      <Card className="mt-6 border-dashed opacity-60">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-medium">Prevention checklist</h2>
+          <Badge>Coming soon</Badge>
+        </div>
+        <p className="mt-2 text-sm text-secondary">Harden your account before anything happens.</p>
       </Card>
     </Shell>
   );
