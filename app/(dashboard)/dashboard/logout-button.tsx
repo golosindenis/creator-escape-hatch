@@ -19,7 +19,7 @@ export function LogoutButton() {
       variant="ghost"
       onClick={logout}
       disabled={busy}
-      className="w-auto px-3 py-1.5 text-xs"
+      className="!w-auto !px-3 !py-1.5 !text-xs"
     >
       Log out
     </Button>
