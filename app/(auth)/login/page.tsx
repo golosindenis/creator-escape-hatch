@@ -1,10 +1,10 @@
 "use client";
 import { useState } from "react";
-import { ShieldCheck } from "lucide-react";
 import { browserClient } from "@/lib/supabase/browser";
 import { Shell } from "@/components/ui/Shell";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Wordmark } from "@/components/ui/Wordmark";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -25,9 +25,8 @@ export default function Login() {
   }
   return (
     <Shell>
-      <div className="mb-8 flex items-center gap-2">
-        <ShieldCheck className="text-accent" size={24} aria-hidden="true" />
-        <span className="text-base font-medium">AccountGuard</span>
+      <div className="mb-8">
+        <Wordmark />
       </div>
       <Card>
         {sent ? (

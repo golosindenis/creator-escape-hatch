@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ShieldCheck, Radio, Bell } from "lucide-react";
 import { Shell } from "@/components/ui/Shell";
+import { Wordmark } from "@/components/ui/Wordmark";
 
 const VALUE_POINTS = [
   {
@@ -23,9 +24,8 @@ const VALUE_POINTS = [
 export default function Home() {
   return (
     <Shell className="max-w-lg text-center">
-      <div className="flex items-center justify-center gap-2">
-        <ShieldCheck className="text-accent" size={28} aria-hidden="true" />
-        <span className="text-base font-medium">AccountGuard</span>
+      <div className="flex justify-center">
+        <Wordmark size={28} />
       </div>
 
       <h1 className="mt-8 text-3xl font-medium text-primary">
