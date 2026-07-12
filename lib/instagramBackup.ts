@@ -45,10 +45,11 @@ export async function syncInstagramMedia(pageId: string): Promise<SyncResult> {
         if (!mediaRes.ok) continue;
         const bytes = new Uint8Array(await mediaRes.arrayBuffer());
         const storagePath = `${pageId}/${item.id}`;
+        const contentType = mediaRes.headers.get("content-type") ?? undefined;
 
         const { error: uploadError } = await serviceClient()
           .storage.from("instagram-backups")
-          .upload(storagePath, bytes, { upsert: true });
+          .upload(storagePath, bytes, { upsert: true, contentType });
         if (uploadError) continue;
 
         await insertBackedUpMedia(pageId, {
