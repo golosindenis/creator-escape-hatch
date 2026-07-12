@@ -11,6 +11,7 @@ import { CreatePageForm } from "./create-page-form";
 import { BreakGlassButton } from "./break-glass-button";
 import { SecondaryEmailForm } from "./secondary-email-form";
 import { DashboardHeader } from "./dashboard-header";
+import { PreventionChecklist } from "./prevention-checklist";
 
 const ALERT_LABELS: Record<string, string> = {
   new_login: "New login detected",
@@ -90,12 +91,10 @@ export default async function Dashboard() {
         <p className="mt-2 text-sm text-secondary">Auto-archive your posts and growth history.</p>
       </Card>
 
-      <Card className="mt-6 border-dashed opacity-60">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-medium">Prevention checklist</h2>
-          <Badge>Coming soon</Badge>
-        </div>
+      <Card className="mt-6">
+        <h2 className="text-base font-medium">Prevention checklist</h2>
         <p className="mt-2 text-sm text-secondary">Harden your account before anything happens.</p>
+        <PreventionChecklist initialCompleted={data.checklist_completed ?? []} />
       </Card>
     </Shell>
   );
