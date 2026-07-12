@@ -8,6 +8,8 @@ import {
 import { upsertConnection } from "@/lib/data/instagram";
 import { syncInstagramMedia } from "@/lib/instagramBackup";
 
+const NONCE_COOKIE = "ig_oauth_nonce";
+
 export async function GET(req: NextRequest) {
   const { searchParams, origin } = new URL(req.url);
   const code = searchParams.get("code");
@@ -16,7 +18,15 @@ export async function GET(req: NextRequest) {
 
   if (!code || !state) return errorRedirect;
 
-  const pageId = verifyState(state, process.env.INSTAGRAM_APP_SECRET!);
+  const nonceIdx = state.lastIndexOf(".");
+  if (nonceIdx === -1) return errorRedirect;
+  const signedState = state.slice(0, nonceIdx);
+  const nonce = state.slice(nonceIdx + 1);
+
+  const cookieNonce = req.cookies.get(NONCE_COOKIE)?.value;
+  if (!cookieNonce || cookieNonce !== nonce) return errorRedirect;
+
+  const pageId = verifyState(signedState, process.env.INSTAGRAM_APP_SECRET!);
   if (!pageId) return errorRedirect;
 
   try {
