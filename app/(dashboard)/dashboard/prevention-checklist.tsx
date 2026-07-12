@@ -1,16 +1,17 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { CHECKLIST_ITEMS } from "@/lib/checklist";
 
 export function PreventionChecklist({ initialCompleted }: { initialCompleted: string[] }) {
   const [completed, setCompleted] = useState<string[]>(initialCompleted);
+  const completedRef = useRef<string[]>(initialCompleted);
 
   async function toggle(key: string) {
-    let next: string[] = [];
-    setCompleted((prev) => {
-      next = prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key];
-      return next;
-    });
+    const next = completedRef.current.includes(key)
+      ? completedRef.current.filter((k) => k !== key)
+      : [...completedRef.current, key];
+    completedRef.current = next;
+    setCompleted(next);
     await fetch("/api/pages/checklist", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
