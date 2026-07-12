@@ -12,13 +12,27 @@ import { BreakGlassButton } from "./break-glass-button";
 import { SecondaryEmailForm } from "./secondary-email-form";
 import { DashboardHeader } from "./dashboard-header";
 import { PreventionChecklist } from "./prevention-checklist";
+import { InstagramBackup } from "./instagram-backup";
+import {
+  getConnectionByPageId,
+  listBackedUpMedia,
+  countBackedUpMedia,
+  getSignedMediaUrls,
+} from "@/lib/data/instagram";
 
 const ALERT_LABELS: Record<string, string> = {
   new_login: "New login detected",
   password_changed: "Password changed",
 };
 
-export default async function Dashboard() {
+export default async function Dashboard({
+  searchParams,
+}: {
+  searchParams: Promise<{ instagram_error?: string }>;
+}) {
+  const { instagram_error } = await searchParams;
+  const instagramError = instagram_error === "1";
+
   const user = await getSessionUser();
   if (!user) redirect("/login");
   const { data } = await serviceClient().from("pages").select("*").eq("owner", user.id).maybeSingle();
@@ -37,6 +51,10 @@ export default async function Dashboard() {
   const forwardAddress = `alerts+${data.id}@${inboundDomain}`;
   const alerts = await listBreachAlerts(data.id);
   const subscriberCount = (await listSubscriberEmails(data.id)).length;
+  const instagramConnection = await getConnectionByPageId(data.id);
+  const backedUpMedia = await listBackedUpMedia(data.id);
+  const backedUpMediaCount = await countBackedUpMedia(data.id);
+  const signedUrls = await getSignedMediaUrls(backedUpMedia.map((m) => m.storagePath));
 
   return (
     <Shell className="max-w-lg">
@@ -83,12 +101,26 @@ export default async function Dashboard() {
         )}
       </Card>
 
-      <Card className="mt-6 border-dashed opacity-60">
+      <Card className="mt-6">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-medium">Content &amp; metrics backup</h2>
-          <Badge>Coming soon</Badge>
+          {instagramConnection && <Badge>Connected</Badge>}
         </div>
-        <p className="mt-2 text-sm text-secondary">Auto-archive your posts and growth history.</p>
+        <p className="mt-2 text-sm text-secondary">Auto-archive your posts and their engagement counts.</p>
+        <InstagramBackup
+          connected={!!instagramConnection}
+          username={instagramConnection?.igUsername ?? null}
+          lastSyncedAt={instagramConnection?.lastSyncedAt ?? null}
+          mediaCount={backedUpMediaCount}
+          media={backedUpMedia.map((m) => ({
+            id: m.id,
+            caption: m.caption,
+            likeCount: m.likeCount,
+            commentsCount: m.commentsCount,
+            signedUrl: signedUrls[m.storagePath] ?? null,
+          }))}
+          initialError={instagramError}
+        />
       </Card>
 
       <Card className="mt-6">
