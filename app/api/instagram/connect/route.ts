@@ -15,9 +15,8 @@ export async function GET(req: NextRequest) {
     .from("pages").select("id").eq("owner", user.id).maybeSingle();
   if (!page) return NextResponse.redirect(new URL("/dashboard", req.url));
 
-  const signedState = signState(page.id, process.env.INSTAGRAM_APP_SECRET!);
   const nonce = randomBytes(16).toString("hex");
-  const state = `${signedState}.${nonce}`;
+  const state = signState(`${page.id}:${nonce}`, process.env.INSTAGRAM_APP_SECRET!);
 
   const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/instagram/callback`;
   const authorizeUrl = buildAuthorizeUrl({

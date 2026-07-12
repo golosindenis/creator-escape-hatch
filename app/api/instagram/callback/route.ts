@@ -18,16 +18,16 @@ export async function GET(req: NextRequest) {
 
   if (!code || !state) return errorRedirect;
 
-  const nonceIdx = state.lastIndexOf(".");
-  if (nonceIdx === -1) return errorRedirect;
-  const signedState = state.slice(0, nonceIdx);
-  const nonce = state.slice(nonceIdx + 1);
+  const combined = verifyState(state, process.env.INSTAGRAM_APP_SECRET!);
+  if (!combined) return errorRedirect;
+
+  const sepIdx = combined.lastIndexOf(":");
+  if (sepIdx === -1) return errorRedirect;
+  const pageId = combined.slice(0, sepIdx);
+  const nonce = combined.slice(sepIdx + 1);
 
   const cookieNonce = req.cookies.get(NONCE_COOKIE)?.value;
   if (!cookieNonce || cookieNonce !== nonce) return errorRedirect;
-
-  const pageId = verifyState(signedState, process.env.INSTAGRAM_APP_SECRET!);
-  if (!pageId) return errorRedirect;
 
   try {
     const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/instagram/callback`;
