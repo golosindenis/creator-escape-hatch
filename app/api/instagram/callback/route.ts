@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
+import { serviceClient } from "@/lib/supabase/server";
 import { verifyState } from "@/lib/instagramAuth";
 import {
   exchangeCodeForShortLivedToken,
@@ -8,8 +10,6 @@ import {
 import { upsertConnection } from "@/lib/data/instagram";
 import { syncInstagramMedia } from "@/lib/instagramBackup";
 
-const NONCE_COOKIE = "ig_oauth_nonce";
-
 export async function GET(req: NextRequest) {
   const { searchParams, origin } = new URL(req.url);
   const code = searchParams.get("code");
@@ -18,16 +18,15 @@ export async function GET(req: NextRequest) {
 
   if (!code || !state) return errorRedirect;
 
-  const combined = verifyState(state, process.env.INSTAGRAM_APP_SECRET!);
-  if (!combined) return errorRedirect;
+  const pageId = verifyState(state, process.env.INSTAGRAM_APP_SECRET!);
+  if (!pageId) return errorRedirect;
 
-  const sepIdx = combined.lastIndexOf(":");
-  if (sepIdx === -1) return errorRedirect;
-  const pageId = combined.slice(0, sepIdx);
-  const nonce = combined.slice(sepIdx + 1);
+  const user = await getSessionUser();
+  if (!user) return errorRedirect;
 
-  const cookieNonce = req.cookies.get(NONCE_COOKIE)?.value;
-  if (!cookieNonce || cookieNonce !== nonce) return errorRedirect;
+  const { data: page } = await serviceClient()
+    .from("pages").select("id").eq("id", pageId).eq("owner", user.id).maybeSingle();
+  if (!page) return errorRedirect;
 
   try {
     const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/instagram/callback`;
