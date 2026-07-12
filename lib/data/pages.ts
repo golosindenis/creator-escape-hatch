@@ -8,18 +8,19 @@ export type Page = {
   realHandle: string;
   breakGlassActive: boolean;
   secondaryEmail: string | null;
+  checklistCompleted: string[];
 };
 
 type Row = {
   id: string; slug: string; creator_name: string;
   real_handle: string; break_glass_active: boolean;
-  secondary_email: string | null;
+  secondary_email: string | null; checklist_completed: string[];
 };
 
 const toPage = (r: Row): Page => ({
   id: r.id, slug: r.slug, creatorName: r.creator_name,
   realHandle: r.real_handle, breakGlassActive: r.break_glass_active,
-  secondaryEmail: r.secondary_email,
+  secondaryEmail: r.secondary_email, checklistCompleted: r.checklist_completed,
 });
 
 export async function getPageBySlug(slug: string): Promise<Page | null> {
@@ -58,5 +59,11 @@ export async function getPageById(pageId: string): Promise<Page | null> {
 export async function setSecondaryEmail(pageId: string, email: string): Promise<void> {
   const { error } = await serviceClient()
     .from("pages").update({ secondary_email: email }).eq("id", pageId);
+  if (error) throw error;
+}
+
+export async function setChecklistCompleted(pageId: string, completed: string[]): Promise<void> {
+  const { error } = await serviceClient()
+    .from("pages").update({ checklist_completed: completed }).eq("id", pageId);
   if (error) throw error;
 }
