@@ -28,6 +28,8 @@ Required environment variables:
 - `BROADCAST_FROM` — A Resend-verified sender email address
 - `RESEND_WEBHOOK_SECRET` — The signing secret for the Resend inbound-email webhook (used to verify svix signatures on `/api/inbound-email`)
 - `NEXT_PUBLIC_INBOUND_EMAIL_DOMAIN` — The verified inbound domain that receives forwarded security emails (e.g., `inbound.yourdomain.com`)
+- `INSTAGRAM_APP_ID` — Your Meta app ID (for Instagram content backup and OAuth login)
+- `INSTAGRAM_APP_SECRET` — Your Meta app secret (for Instagram content backup and OAuth login)
 
 ### Database
 
@@ -58,6 +60,26 @@ Per-creator setup (done by the creator, in their own Instagram account):
 2. In Instagram, go to Settings → Security → Emails from Instagram, and add that forwarding address as a recipient for security emails.
 
 This only configures a forwarding rule inside the creator's own Instagram account — the app never receives or stores an Instagram password or API credential, and cannot recover a compromised account. It can only detect Instagram's own alert emails once forwarded and notify the creator so they can act.
+
+### Content backup
+
+Creators can back up their Instagram post content — images, videos, captions, and engagement counts — to cloud storage without dependency on the platform. This slice backs up media only; growth metrics and follower history are not included. The feature is fully ungated; all authenticated creators can connect and sync.
+
+Setup (one-time, per deployment):
+
+1. At [developers.facebook.com](https://developers.facebook.com), create a Meta app and add the Instagram product.
+2. In the app settings, enable "Instagram Login" and set the OAuth redirect URI to `https://<your-app>/api/instagram/callback` (for local dev, use `http://localhost:3000/api/instagram/callback`).
+3. Add your own Instagram professional account as an app tester in Development mode.
+4. Copy the app's App ID and App Secret into `INSTAGRAM_APP_ID` and `INSTAGRAM_APP_SECRET`.
+
+Per-creator setup (done by the creator, in the dashboard):
+
+1. Log in and open the dashboard.
+2. On the "Content backup" card, click "Connect Instagram".
+3. Approve the app on Instagram's OAuth dialog to grant media read permissions.
+4. After approval, the app syncs existing posts and displays a gallery of thumbnails. Click "Sync now" to refresh the backup after new posts are published on Instagram.
+
+Meta App Review is required before creators other than the app's registered testers can connect. This review is a separate manual step outside the codebase and is handled by the app maintainer directly with Meta.
 
 ### Local Development
 
