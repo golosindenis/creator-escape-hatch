@@ -6,10 +6,11 @@ export function PreventionChecklist({ initialCompleted }: { initialCompleted: st
   const [completed, setCompleted] = useState<string[]>(initialCompleted);
 
   async function toggle(key: string) {
-    const next = completed.includes(key)
-      ? completed.filter((k) => k !== key)
-      : [...completed, key];
-    setCompleted(next);
+    let next: string[] = [];
+    setCompleted((prev) => {
+      next = prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key];
+      return next;
+    });
     await fetch("/api/pages/checklist", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
