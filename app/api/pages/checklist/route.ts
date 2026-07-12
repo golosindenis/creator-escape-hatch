@@ -1,0 +1,24 @@
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { getSessionUser } from "@/lib/auth";
+import { serviceClient } from "@/lib/supabase/server";
+import { setChecklistCompleted } from "@/lib/data/pages";
+import { isValidChecklistCompleted } from "@/lib/checklist";
+
+const Body = z.object({ completed: z.array(z.string()) });
+
+export async function POST(req: NextRequest) {
+  const user = await getSessionUser();
+  if (!user) return NextResponse.json({ ok: false }, { status: 401 });
+
+  const parsed = Body.safeParse(await req.json().catch(() => null));
+  if (!parsed.success || !isValidChecklistCompleted(parsed.data.completed))
+    return NextResponse.json({ ok: false, reason: "invalid" }, { status: 400 });
+
+  const { data: page } = await serviceClient()
+    .from("pages").select("id").eq("owner", user.id).maybeSingle();
+  if (!page) return NextResponse.json({ ok: false }, { status: 404 });
+
+  await setChecklistCompleted(page.id, parsed.data.completed);
+  return NextResponse.json({ ok: true });
+}
