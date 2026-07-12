@@ -64,7 +64,7 @@ export async function fetchInstagramUsername(input: { accessToken: string }): Pr
 }
 
 export type GraphMediaItem = {
-  id: string; caption?: string; media_type: string; media_url: string;
+  id: string; caption?: string; media_type: string; media_url?: string; thumbnail_url?: string;
   permalink: string; like_count?: number; comments_count?: number; timestamp: string;
 };
 
@@ -72,7 +72,7 @@ export async function fetchMediaPage(input: {
   accessToken: string; after?: string;
 }): Promise<{ items: GraphMediaItem[]; nextAfter: string | null }> {
   const url = new URL(`${GRAPH_BASE}/me/media`);
-  url.searchParams.set("fields", "id,caption,media_type,media_url,permalink,like_count,comments_count,timestamp");
+  url.searchParams.set("fields", "id,caption,media_type,media_url,thumbnail_url,permalink,like_count,comments_count,timestamp");
   url.searchParams.set("access_token", input.accessToken);
   if (input.after) url.searchParams.set("after", input.after);
   const res = await fetch(url.toString());

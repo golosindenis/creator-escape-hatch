@@ -41,28 +41,35 @@ export async function syncInstagramMedia(pageId: string): Promise<SyncResult> {
         total += 1;
         if (existingIds.has(item.id)) continue;
 
-        const mediaRes = await fetch(item.media_url);
-        if (!mediaRes.ok) continue;
-        const bytes = new Uint8Array(await mediaRes.arrayBuffer());
-        const storagePath = `${pageId}/${item.id}`;
-        const contentType = mediaRes.headers.get("content-type") ?? undefined;
+        const sourceUrl = item.media_url ?? item.thumbnail_url;
+        if (!sourceUrl) continue;
 
-        const { error: uploadError } = await serviceClient()
-          .storage.from("instagram-backups")
-          .upload(storagePath, bytes, { upsert: true, contentType });
-        if (uploadError) continue;
+        try {
+          const mediaRes = await fetch(sourceUrl);
+          if (!mediaRes.ok) continue;
+          const bytes = new Uint8Array(await mediaRes.arrayBuffer());
+          const storagePath = `${pageId}/${item.id}`;
+          const contentType = mediaRes.headers.get("content-type") ?? undefined;
 
-        await insertBackedUpMedia(pageId, {
-          igMediaId: item.id,
-          mediaType: item.media_type,
-          caption: item.caption ?? null,
-          likeCount: item.like_count ?? null,
-          commentsCount: item.comments_count ?? null,
-          permalink: item.permalink ?? null,
-          storagePath,
-          postedAt: item.timestamp ?? null,
-        });
-        synced += 1;
+          const { error: uploadError } = await serviceClient()
+            .storage.from("instagram-backups")
+            .upload(storagePath, bytes, { upsert: true, contentType });
+          if (uploadError) continue;
+
+          await insertBackedUpMedia(pageId, {
+            igMediaId: item.id,
+            mediaType: item.media_type,
+            caption: item.caption ?? null,
+            likeCount: item.like_count ?? null,
+            commentsCount: item.comments_count ?? null,
+            permalink: item.permalink ?? null,
+            storagePath,
+            postedAt: item.timestamp ?? null,
+          });
+          synced += 1;
+        } catch {
+          continue;
+        }
       }
       after = page.nextAfter ?? undefined;
     } while (after);
