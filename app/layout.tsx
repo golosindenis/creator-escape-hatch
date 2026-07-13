@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { APP_DESCRIPTION } from "@/lib/siteMeta";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "AccountGuard — audience backup for creators",
-  description: "Own your audience and keep an emergency channel ready if your account ever gets locked out or hacked.",
+  description: APP_DESCRIPTION,
 };
 
 export default function RootLayout({

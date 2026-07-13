@@ -1,11 +1,11 @@
 import type { MetadataRoute } from "next";
+import { APP_DESCRIPTION } from "@/lib/siteMeta";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "AccountGuard",
     short_name: "AccountGuard",
-    description:
-      "Own your audience and keep an emergency channel ready if your account ever gets locked out or hacked.",
+    description: APP_DESCRIPTION,
     start_url: "/",
     display: "standalone",
     background_color: "#0b0c0e",
