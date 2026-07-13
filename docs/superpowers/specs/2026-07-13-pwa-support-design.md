@@ -11,10 +11,13 @@ Rounded-square icon: dark background (`#0b0c0e`, matches `--surface-0`), teal (`
 ## Components
 
 **`app/icon.tsx`**
-Next.js Metadata File Convention icon generator using `ImageResponse`. Renders the dark/teal shield glyph. Next serves this at multiple standard sizes automatically (used for the browser tab favicon and general `icons` metadata).
+Next.js Metadata File Convention icon generator using `ImageResponse` (from `next/og`). Renders the dark/teal shield glyph at 32×32. Next auto-injects the `<link rel="icon">` browser-tab favicon tag from this — it is not consumed by the manifest (see below).
 
 **`app/apple-icon.tsx`**
-Same glyph, rendered at 180×180 (Apple's touch-icon convention), for iOS "Add to Home Screen".
+Same glyph, rendered at 180×180 (Apple's touch-icon convention). Next auto-injects `<link rel="apple-touch-icon">` from this.
+
+**`app/icons/192/route.tsx`, `app/icons/512/route.tsx`**
+Plain Route Handlers (not the `icon.tsx` metadata convention) that each return `new ImageResponse(...)` with the same glyph at a fixed size. These exist because `manifest.ts`'s `icons` array needs a stable, predictable URL — the `icon.tsx` convention serves its output at a Next-generated hashed query path (`/icon?<generated>`) meant for `<head>` injection, not for external reference. A plain route at `/icons/192` and `/icons/512` gives the manifest fixed paths to point at, while still generating the PNG in code instead of committing binary files.
 
 **`app/manifest.ts`**
 Next's typed Web App Manifest convention. Fields:
@@ -24,11 +27,11 @@ Next's typed Web App Manifest convention. Fields:
 - `theme_color`: `#0b0c0e`
 - `background_color`: `#0b0c0e`
 - `display`: `"standalone"`
-- `icons`: array referencing 192×192 and 512×512 PNGs, produced by exporting `generateImageMetadata` from `app/icon.tsx` to emit both sizes from the one file (same glyph, scaled)
+- `icons`: `[{ src: '/icons/192', sizes: '192x192', type: 'image/png' }, { src: '/icons/512', sizes: '512x512', type: 'image/png' }]`
 
 ## Wiring
 
-Next.js auto-detects `manifest.ts`, `icon.tsx`, and `apple-icon.tsx` in the `app/` root and injects the correct `<link rel="manifest">`, `<link rel="icon">`, and `<link rel="apple-touch-icon">` tags into `<head>` at build time. No manual changes to `app/layout.tsx` are required.
+Next.js auto-detects `manifest.ts`, `icon.tsx`, and `apple-icon.tsx` in the `app/` root and injects the correct `<link rel="manifest">`, `<link rel="icon">`, and `<link rel="apple-touch-icon">` tags into `<head>` at build time. No manual changes to `app/layout.tsx` are required. The `app/icons/*/route.tsx` handlers are plain routes and require no wiring beyond being referenced by URL in `manifest.ts`.
 
 ## Out of scope
 
