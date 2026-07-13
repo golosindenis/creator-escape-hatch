@@ -34,9 +34,9 @@ export default async function PublicPage({ params }: { params: Promise<{ slug: s
     <Shell>
       <Card className="text-center">
         <ShieldCheck className="mx-auto text-accent" size={28} aria-hidden="true" />
-        <h1 className="mt-3 text-xl font-medium">Stay connected with {page.creatorName}</h1>
+        <h1 className="mt-3 text-xl font-medium">Get updates from {page.creatorName}</h1>
         <p className="mt-2 text-sm text-secondary">
-          Get updates directly — even if my social account ever goes down.
+          Drop your email to stay connected — even if my social account ever goes down.
         </p>
         <SubscribeForm slug={page.slug} />
       </Card>

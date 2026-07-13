@@ -28,8 +28,9 @@ export function SubscribeForm({ slug }: { slug: string }) {
         placeholder="you@email.com"
         className="rounded-lg border border-border bg-surface-2 p-2.5 text-sm text-primary placeholder:text-muted focus:border-border-strong focus:outline-none"
       />
-      <Button type="submit">Keep me updated</Button>
+      <Button type="submit">Subscribe</Button>
       {status === "error" && <p className="text-sm text-danger">Please check your email address.</p>}
+      <p className="text-xs text-muted">No account or password needed — just future updates.</p>
     </form>
   );
 }
