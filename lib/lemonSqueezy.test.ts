@@ -69,4 +69,23 @@ describe("parseSubscriptionEvent", () => {
   it("returns null for a malformed payload", () => {
     expect(parseSubscriptionEvent({ not: "a valid payload" })).toBeNull();
   });
+
+  it("returns null for a non-subscription event, even with a well-formed body", () => {
+    const invoicePayload = {
+      meta: { event_name: "subscription_payment_success", custom_data: { page_id: "page-1" } },
+      data: {
+        id: "invoice-1",
+        attributes: { status: "paid", customer_id: 42, renews_at: null },
+      },
+    };
+    expect(parseSubscriptionEvent(invoicePayload)).toBeNull();
+  });
+
+  it("still parses a recognized subscription_cancelled event", () => {
+    const cancelled = {
+      meta: { event_name: "subscription_cancelled", custom_data: { page_id: "page-1" } },
+      data: { id: "sub-1", attributes: { status: "cancelled", customer_id: 42, renews_at: null } },
+    };
+    expect(parseSubscriptionEvent(cancelled)?.status).toBe("expired");
+  });
 });

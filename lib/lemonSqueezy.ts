@@ -25,6 +25,14 @@ export type SubscriptionEvent = {
 
 const ACTIVE_STATUSES = new Set(["active", "on_trial"]);
 
+const SUBSCRIPTION_LIFECYCLE_EVENTS = new Set([
+  "subscription_created",
+  "subscription_updated",
+  "subscription_resumed",
+  "subscription_expired",
+  "subscription_cancelled",
+]);
+
 export function parseSubscriptionEvent(payload: unknown): SubscriptionEvent | null {
   if (typeof payload !== "object" || payload === null) return null;
   const p = payload as Record<string, unknown>;
@@ -32,6 +40,9 @@ export function parseSubscriptionEvent(payload: unknown): SubscriptionEvent | nu
   const data = p.data as Record<string, unknown> | undefined;
   const attributes = data?.attributes as Record<string, unknown> | undefined;
   const customData = meta?.custom_data as Record<string, unknown> | undefined;
+
+  const eventName = typeof meta?.event_name === "string" ? meta.event_name : null;
+  if (!eventName || !SUBSCRIPTION_LIFECYCLE_EVENTS.has(eventName)) return null;
 
   const pageId = typeof customData?.page_id === "string" ? customData.page_id : null;
   if (!pageId || !attributes) return null;
