@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { ShieldAlert, ShieldCheck } from "lucide-react";
 import { getPageBySlug } from "@/lib/data/pages";
 import { pageState } from "@/lib/breakGlass";
+import { hasActiveAccess } from "@/lib/billing";
 import { Shell } from "@/components/ui/Shell";
 import { Card } from "@/components/ui/Card";
 import { SubscribeForm } from "./subscribe-form";
@@ -38,7 +39,7 @@ export default async function PublicPage({ params }: { params: Promise<{ slug: s
         <p className="mt-2 text-sm text-secondary">
           Drop your email to stay connected — even if my social account ever goes down.
         </p>
-        <SubscribeForm slug={page.slug} />
+        <SubscribeForm slug={page.slug} hasAccess={hasActiveAccess(page)} />
       </Card>
     </Shell>
   );

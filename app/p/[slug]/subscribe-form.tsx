@@ -2,9 +2,15 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 
-export function SubscribeForm({ slug }: { slug: string }) {
+export function SubscribeForm({ slug, hasAccess }: { slug: string; hasAccess: boolean }) {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "ok" | "error">("idle");
+
+  if (!hasAccess) {
+    return (
+      <p className="mt-6 text-sm text-muted">List capture is paused right now — check back soon.</p>
+    );
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
