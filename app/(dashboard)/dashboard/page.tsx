@@ -4,9 +4,11 @@ import { serviceClient } from "@/lib/supabase/server";
 import { listBreachAlerts } from "@/lib/data/breachAlerts";
 import { listSubscriberEmails } from "@/lib/data/subscribers";
 import { protectionLabel, subscriberCountLabel, secondaryAlertsLabel } from "@/lib/dashboardStatus";
+import { hasActiveAccess, billingStatusLabel } from "@/lib/billing";
 import { Shell } from "@/components/ui/Shell";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { CreatePageForm } from "./create-page-form";
 import { BreakGlassButton } from "./break-glass-button";
 import { SecondaryEmailForm } from "./secondary-email-form";
@@ -46,6 +48,8 @@ export default async function Dashboard({
       </Shell>
     );
   }
+
+  const hasAccess = hasActiveAccess({ subscriptionStatus: data.subscription_status, comped: data.comped });
 
   const inboundDomain = process.env.NEXT_PUBLIC_INBOUND_EMAIL_DOMAIN ?? "example.com";
   const forwardAddress = `alerts+${data.id}@${inboundDomain}`;
@@ -120,6 +124,7 @@ export default async function Dashboard({
             signedUrl: signedUrls[m.storagePath] ?? null,
           }))}
           initialError={instagramError}
+          hasAccess={hasAccess}
         />
       </Card>
 
@@ -127,6 +132,40 @@ export default async function Dashboard({
         <h2 className="text-base font-medium">Prevention checklist</h2>
         <p className="mt-2 text-sm text-secondary">Harden your account before anything happens.</p>
         <PreventionChecklist initialCompleted={data.checklist_completed ?? []} />
+      </Card>
+
+      <Card className="mt-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-medium">Billing</h2>
+          <Badge>{billingStatusLabel({ subscriptionStatus: data.subscription_status, comped: data.comped })}</Badge>
+        </div>
+        {hasAccess ? (
+          <>
+            {data.lemonsqueezy_renews_at && (
+              <p className="mt-2 text-sm text-secondary">
+                Renews {new Date(data.lemonsqueezy_renews_at).toLocaleDateString()}
+              </p>
+            )}
+            {!data.comped && (
+              <a href="/api/billing/portal" className="mt-3 inline-block">
+                <Button variant="ghost" className="w-auto px-4">
+                  Manage subscription
+                </Button>
+              </a>
+            )}
+          </>
+        ) : (
+          <>
+            <p className="mt-2 text-sm text-secondary">
+              Unlock Instagram backup and your capture page with the Creator plan.
+            </p>
+            <a href="/pricing" className="mt-3 inline-block">
+              <Button variant="ghost" className="w-auto px-4">
+                View plans
+              </Button>
+            </a>
+          </>
+        )}
       </Card>
     </Shell>
   );

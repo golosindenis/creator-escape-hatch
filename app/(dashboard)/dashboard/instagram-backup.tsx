@@ -18,6 +18,7 @@ export function InstagramBackup({
   mediaCount,
   media,
   initialError,
+  hasAccess,
 }: {
   connected: boolean;
   username: string | null;
@@ -25,10 +26,24 @@ export function InstagramBackup({
   mediaCount: number;
   media: BackupMediaItem[];
   initialError: boolean;
+  hasAccess: boolean;
 }) {
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState(initialError);
   const [message, setMessage] = useState<string | null>(null);
+
+  if (!hasAccess) {
+    return (
+      <div className="mt-4">
+        <p className="text-sm text-secondary">Unlock content backup with the Creator plan.</p>
+        <a href="/pricing" className="mt-3 inline-block">
+          <Button variant="ghost" className="w-auto px-4">
+            Upgrade to Creator
+          </Button>
+        </a>
+      </div>
+    );
+  }
 
   async function sync() {
     setSyncing(true);
