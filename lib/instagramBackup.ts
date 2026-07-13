@@ -32,50 +32,57 @@ export async function syncInstagramMedia(pageId: string): Promise<SyncResult> {
   const existingIds = await getBackedUpMediaIds(pageId);
   let synced = 0;
   let total = 0;
+  let pagesFetched = 0;
 
-  try {
-    let after: string | undefined;
-    do {
-      const page = await fetchMediaPage({ accessToken, after });
-      for (const item of page.items) {
-        total += 1;
-        if (existingIds.has(item.id)) continue;
+  let after: string | undefined;
+  do {
+    let page;
+    try {
+      page = await fetchMediaPage({ accessToken, after });
+    } catch {
+      // A later page failing (rate limit, transient error) shouldn't discard
+      // progress already made on earlier pages — stop here and keep it.
+      if (pagesFetched === 0) return { ok: false, reason: "sync_failed" };
+      break;
+    }
+    pagesFetched += 1;
 
-        const sourceUrl = item.media_url ?? item.thumbnail_url;
-        if (!sourceUrl) continue;
+    for (const item of page.items) {
+      total += 1;
+      if (existingIds.has(item.id)) continue;
 
-        try {
-          const mediaRes = await fetch(sourceUrl);
-          if (!mediaRes.ok) continue;
-          const bytes = new Uint8Array(await mediaRes.arrayBuffer());
-          const storagePath = `${pageId}/${item.id}`;
-          const contentType = mediaRes.headers.get("content-type") ?? undefined;
+      const sourceUrl = item.media_url ?? item.thumbnail_url;
+      if (!sourceUrl) continue;
 
-          const { error: uploadError } = await serviceClient()
-            .storage.from("instagram-backups")
-            .upload(storagePath, bytes, { upsert: true, contentType });
-          if (uploadError) continue;
+      try {
+        const mediaRes = await fetch(sourceUrl);
+        if (!mediaRes.ok) continue;
+        const bytes = new Uint8Array(await mediaRes.arrayBuffer());
+        const storagePath = `${pageId}/${item.id}`;
+        const contentType = mediaRes.headers.get("content-type") ?? undefined;
 
-          await insertBackedUpMedia(pageId, {
-            igMediaId: item.id,
-            mediaType: item.media_type,
-            caption: item.caption ?? null,
-            likeCount: item.like_count ?? null,
-            commentsCount: item.comments_count ?? null,
-            permalink: item.permalink ?? null,
-            storagePath,
-            postedAt: item.timestamp ?? null,
-          });
-          synced += 1;
-        } catch {
-          continue;
-        }
+        const { error: uploadError } = await serviceClient()
+          .storage.from("instagram-backups")
+          .upload(storagePath, bytes, { upsert: true, contentType });
+        if (uploadError) continue;
+
+        await insertBackedUpMedia(pageId, {
+          igMediaId: item.id,
+          mediaType: item.media_type,
+          caption: item.caption ?? null,
+          likeCount: item.like_count ?? null,
+          commentsCount: item.comments_count ?? null,
+          permalink: item.permalink ?? null,
+          storagePath,
+          postedAt: item.timestamp ?? null,
+        });
+        synced += 1;
+      } catch {
+        continue;
       }
-      after = page.nextAfter ?? undefined;
-    } while (after);
-  } catch {
-    return { ok: false, reason: "sync_failed" };
-  }
+    }
+    after = page.nextAfter ?? undefined;
+  } while (after);
 
   await updateLastSyncedAt(pageId);
   return { ok: true, synced, total };
