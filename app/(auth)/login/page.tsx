@@ -1,21 +1,33 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { browserClient } from "@/lib/supabase/browser";
 import { Shell } from "@/components/ui/Shell";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Wordmark } from "@/components/ui/Wordmark";
 
+const LINK_EXPIRED_MESSAGE =
+  "That login link didn't work — it may have expired, already been used, or been opened in a different browser than the one you requested it from. Please request a new one.";
+
 export default function Login() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("error") === "link_expired") {
+      setError(LINK_EXPIRED_MESSAGE);
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, []);
+
   async function send(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     const { error } = await browserClient().auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback` },
+      options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/confirm` },
     });
     if (error) {
       setError(error.message && error.message !== "{}" ? error.message : "Couldn't send the login email. Please try again in a moment.");
