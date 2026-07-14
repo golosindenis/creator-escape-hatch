@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ShieldCheck, Radio, Bell } from "lucide-react";
 import { Shell } from "@/components/ui/Shell";
 import { Wordmark } from "@/components/ui/Wordmark";
+import { getSessionUser } from "@/lib/auth";
 
 const VALUE_POINTS = [
   {
@@ -21,7 +23,12 @@ const VALUE_POINTS = [
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const user = await getSessionUser();
+  if (user) {
+    redirect("/dashboard");
+  }
+
   return (
     <Shell className="max-w-lg text-center">
       <div className="flex justify-center">
