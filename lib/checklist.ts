@@ -20,3 +20,9 @@ export function isValidChecklistKey(key: string): boolean {
 export function isValidChecklistCompleted(completed: string[]): boolean {
   return completed.every(isValidChecklistKey);
 }
+
+export function isChecklistDirty(current: string[], saved: string[]): boolean {
+  if (current.length !== saved.length) return true;
+  const savedSet = new Set(saved);
+  return current.some((key) => !savedSet.has(key));
+}
