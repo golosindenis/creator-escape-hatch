@@ -89,6 +89,7 @@ export default function Login() {
               <input
                 type="text"
                 inputMode="numeric"
+                autoComplete="one-time-code"
                 required
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
