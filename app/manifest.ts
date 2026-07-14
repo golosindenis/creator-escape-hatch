@@ -7,6 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "AccountGuard",
     description: APP_DESCRIPTION,
     start_url: "/",
+    scope: "/",
     display: "standalone",
     background_color: "#0b0c0e",
     theme_color: "#0b0c0e",
