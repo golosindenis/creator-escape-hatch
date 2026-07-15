@@ -84,7 +84,7 @@ const toMedia = (r: MediaRow): BackedUpMedia => ({
 
 export async function listBackedUpMedia(pageId: string, limit = 24): Promise<BackedUpMedia[]> {
   const { data, error } = await serviceClient()
-    .from("backed_up_media").select("*").eq("page_id", pageId)
+    .from("backed_up_media").select("*").eq("page_id", pageId).is("parent_media_id", null)
     .order("posted_at", { ascending: false }).limit(limit);
   if (error) throw error;
   return (data ?? []).map((r) => toMedia(r as MediaRow));
@@ -92,29 +92,44 @@ export async function listBackedUpMedia(pageId: string, limit = 24): Promise<Bac
 
 export async function countBackedUpMedia(pageId: string): Promise<number> {
   const { count, error } = await serviceClient()
-    .from("backed_up_media").select("*", { count: "exact", head: true }).eq("page_id", pageId);
+    .from("backed_up_media").select("*", { count: "exact", head: true }).eq("page_id", pageId).is("parent_media_id", null);
   if (error) throw error;
   return count ?? 0;
 }
 
-export async function getBackedUpMediaIds(pageId: string): Promise<Set<string>> {
+export async function getBackedUpMediaIds(pageId: string): Promise<Map<string, string>> {
   const { data, error } = await serviceClient()
-    .from("backed_up_media").select("ig_media_id").eq("page_id", pageId);
+    .from("backed_up_media").select("id, ig_media_id").eq("page_id", pageId);
   if (error) throw error;
-  return new Set((data ?? []).map((r) => (r as { ig_media_id: string }).ig_media_id));
+  return new Map(
+    (data ?? []).map((r) => {
+      const row = r as { id: string; ig_media_id: string };
+      return [row.ig_media_id, row.id] as const;
+    }),
+  );
 }
 
 export async function insertBackedUpMedia(pageId: string, input: {
   igMediaId: string; mediaType: string; caption: string | null;
   likeCount: number | null; commentsCount: number | null; permalink: string | null;
   storagePath: string; postedAt: string | null;
-}): Promise<void> {
-  const { error } = await serviceClient().from("backed_up_media").insert({
+  parentMediaId?: string; position?: number;
+}): Promise<string> {
+  const { data, error } = await serviceClient().from("backed_up_media").insert({
     page_id: pageId, ig_media_id: input.igMediaId, media_type: input.mediaType,
     caption: input.caption, like_count: input.likeCount, comments_count: input.commentsCount,
     permalink: input.permalink, storage_path: input.storagePath, posted_at: input.postedAt,
-  });
+    parent_media_id: input.parentMediaId ?? null, position: input.position ?? null,
+  }).select("id").single();
   if (error) throw error;
+  return (data as { id: string }).id;
+}
+
+export async function countMediaChildren(parentMediaId: string): Promise<number> {
+  const { count, error } = await serviceClient()
+    .from("backed_up_media").select("*", { count: "exact", head: true }).eq("parent_media_id", parentMediaId);
+  if (error) throw error;
+  return count ?? 0;
 }
 
 export async function getSignedMediaUrls(paths: string[]): Promise<Record<string, string>> {
