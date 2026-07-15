@@ -681,3 +681,31 @@ Via Supabase Storage, confirm a carousel's child files live under `instagram-bac
 **Placeholder scan:** every code step contains complete, runnable code; commands have expected output; no TBD/TODO.
 
 **Type consistency:** `ChildInsertPlanItem` fields (`igMediaId`, `mediaType`, `sourceUrl`, `position`) defined in Task 3 match their usage in Task 5's `backUpCarouselChildren` (`planned.igMediaId`, `planned.mediaType`, `planned.sourceUrl`, `planned.position`). `needsChildBackfill(mediaType, existingChildCount)`'s parameter order (Task 3) matches its call site in Task 5 (`needsChildBackfill(item.media_type, childCount)`). `getBackedUpMediaIds`'s new `Map<string, string>` return (Task 4) matches Task 5's `existingIds.get(item.id)` usage. `insertBackedUpMedia`'s new `Promise<string>` return (Task 4) matches Task 5's `const insertedId = await insertBackedUpMedia(...)` and its use as `parentMediaId` in the nested `backUpCarouselChildren` call. `countMediaChildren(parentMediaId: string)` (Task 4) matches its Task 5 call site (`countMediaChildren(existingRowId)`, where `existingRowId` is narrowed to `string` by the preceding truthy check). `fetchCarouselChildren`'s `{ mediaId, accessToken }` input (Task 2) matches Task 5's call (`{ mediaId: input.igMediaId, accessToken: input.accessToken }`).
+
+---
+
+## Post-merge addendum: Task 7 (added after final whole-branch review)
+
+The final whole-branch review, run against Tasks 1-6 merged together and verified live against production, found an Important gap that only real data exposed: **the `count === 0` backfill trigger cannot distinguish a fully-backed-up carousel from a partially-backed-up one.** Per-child failure isolation (§4.4, correctly implemented) means a carousel can end up with *some* but not all children stored — e.g. a transient download failure on one interior slide. Once a carousel has ≥1 child, `needsChildBackfill` reports `false` forever, so the gap never gets retried. This was confirmed live: 3 of 64 backfilled carousels are missing an interior slide.
+
+**Fix:** replace the zero-count gate with a real diff. Every sync, for every carousel (new or already-existing), fetch its current children from the Graph API and compare against the child `ig_media_id`s already stored for that parent — only download/upload/insert the ones actually missing. This makes carousel child backup naturally idempotent and self-healing: a complete carousel costs one cheap Graph API call and does nothing further; a partial carousel gets exactly its missing slides filled in; a fresh carousel gets all its children, same as before.
+
+### Task 7: Idempotent, self-healing carousel child backup
+
+**Files:**
+- Modify: `lib/data/instagram.ts` — replace `countMediaChildren` with `getMediaChildIds`.
+- Modify: `lib/instagramCarousel.ts` / `lib/instagramCarousel.test.ts` — remove `needsChildBackfill`; `buildChildInsertPlan` gains an `existingChildIds` filter parameter.
+- Modify: `lib/instagramBackup.ts` — every carousel (new-item or already-existing) goes through the same `backUpCarouselChildren` call; that function now does its own missing-children diff internally.
+
+**Interfaces:**
+- Consumes: `fetchCarouselChildren` (unchanged, Task 2).
+- Produces:
+  - `getMediaChildIds(parentMediaId: string): Promise<Set<string>>` — the `ig_media_id`s already stored as children of this parent.
+  - `buildChildInsertPlan(children: GraphMediaItem[], existingChildIds: Set<string>): ChildInsertPlanItem[]` — was `buildChildInsertPlan(children: GraphMediaItem[])`; now filters out any child whose `id` is already in `existingChildIds`.
+  - `needsChildBackfill` is removed — no longer needed, since the diff itself determines what (if anything) to do.
+
+**Result (2026-07-15):** implemented (commit `6304299`), reviewed clean, then verified live against production. Ran the repair sync live: `child_rows` grew 376→382 (no duplicates — confirmed via a `group by (parent_media_id, position) having count(*) > 1` query returning zero rows). Parent `3b6a7a43` fully repaired (6→7 children, positions 0-6 contiguous) — its missing video downloaded successfully on retry. The other +5 child rows came from *other* carousels that had trailing gaps (a missing *last* slide, which the original gap-detection heuristic `max(position)-min(position)+1 <> count(*)` can't see) — the new diff-based design correctly caught and repaired those too, beyond the 3 originally identified.
+
+Parents `cbe933ae` and `fe7a40de` are still missing their one slide each. Diagnosed directly against Instagram's Graph API and CDN (temporary diagnostic script, not committed): both are real, external, non-transient failures — one video's `media_url` returns a hard `500` from Instagram's own CDN, the other hangs indefinitely with no response. Neither is a defect in this branch's logic; both are outside this codebase's control. Confirmed this is *not* a silent-forever failure mode like before the fix: because the trigger is now a real id-diff rather than a zero-count gate, these two carousels are correctly re-identified as incomplete on every future sync and will keep retrying — if Instagram ever serves that content correctly again, the next sync picks it up automatically.
+
+Flagged separately (not part of this slice): `lib/instagramBackup.ts`'s media downloads (both top-level and carousel-child) have no fetch timeout, which is how the hung request surfaced during diagnosis — pre-existing since the original Instagram backup slice, tracked as a follow-up task rather than scope-crept into this fix.
