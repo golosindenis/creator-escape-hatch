@@ -1,13 +1,13 @@
 import { serviceClient } from "@/lib/supabase/server";
 import { needsTokenRefresh } from "@/lib/instagramAuth";
-import { needsChildBackfill, buildChildInsertPlan } from "@/lib/instagramCarousel";
+import { buildChildInsertPlan } from "@/lib/instagramCarousel";
 import {
   getConnectionByPageId,
   updateConnectionToken,
   updateLastSyncedAt,
   getBackedUpMediaIds,
   insertBackedUpMedia,
-  countMediaChildren,
+  getMediaChildIds,
 } from "@/lib/data/instagram";
 import { refreshLongLivedToken, fetchMediaPage, fetchCarouselChildren } from "@/lib/instagramGraph";
 
@@ -25,7 +25,10 @@ async function backUpCarouselChildren(input: {
     return;
   }
 
-  for (const planned of buildChildInsertPlan(children)) {
+  const existingChildIds = await getMediaChildIds(input.parentMediaId);
+  const missing = buildChildInsertPlan(children, existingChildIds);
+
+  for (const planned of missing) {
     if (!planned.sourceUrl) continue;
 
     try {
@@ -97,19 +100,16 @@ export async function syncInstagramMedia(pageId: string): Promise<SyncResult> {
       const existingRowId = existingIds.get(item.id);
 
       if (existingRowId) {
-        // Already backed up. A carousel whose cover was stored before this
-        // slice shipped has no children yet — backfill them now. Only
-        // carousels ever need this check, so non-carousel items (the
-        // overwhelming majority on a repeat sync) skip straight past
-        // without an extra DB round trip.
+        // A carousel's children are re-checked on every sync (fetchCarouselChildren
+        // + a diff against what's stored) so a partial backfill from a prior run's
+        // transient failure gets topped up. A complete carousel costs one cheap
+        // Graph API call and inserts nothing. Non-carousel items skip straight
+        // past without any extra work.
         if (item.media_type === "CAROUSEL_ALBUM") {
           try {
-            const childCount = await countMediaChildren(existingRowId);
-            if (needsChildBackfill(item.media_type, childCount)) {
-              await backUpCarouselChildren({ pageId, parentMediaId: existingRowId, igMediaId: item.id, accessToken });
-            }
+            await backUpCarouselChildren({ pageId, parentMediaId: existingRowId, igMediaId: item.id, accessToken });
           } catch {
-            // Leave this carousel as a backfill candidate for the next sync.
+            // Leave this carousel to be retried on the next sync.
           }
         }
         continue;

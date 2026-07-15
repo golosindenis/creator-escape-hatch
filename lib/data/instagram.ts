@@ -125,11 +125,11 @@ export async function insertBackedUpMedia(pageId: string, input: {
   return (data as { id: string }).id;
 }
 
-export async function countMediaChildren(parentMediaId: string): Promise<number> {
-  const { count, error } = await serviceClient()
-    .from("backed_up_media").select("*", { count: "exact", head: true }).eq("parent_media_id", parentMediaId);
+export async function getMediaChildIds(parentMediaId: string): Promise<Set<string>> {
+  const { data, error } = await serviceClient()
+    .from("backed_up_media").select("ig_media_id").eq("parent_media_id", parentMediaId);
   if (error) throw error;
-  return count ?? 0;
+  return new Set((data ?? []).map((r) => (r as { ig_media_id: string }).ig_media_id));
 }
 
 export async function getSignedMediaUrls(paths: string[]): Promise<Record<string, string>> {
