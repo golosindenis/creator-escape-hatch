@@ -65,7 +65,7 @@ export async function fetchInstagramUsername(input: { accessToken: string }): Pr
 
 export type GraphMediaItem = {
   id: string; caption?: string; media_type: string; media_url?: string; thumbnail_url?: string;
-  permalink: string; like_count?: number; comments_count?: number; timestamp: string;
+  permalink?: string; like_count?: number; comments_count?: number; timestamp?: string;
 };
 
 export async function fetchMediaPage(input: {
@@ -82,4 +82,16 @@ export async function fetchMediaPage(input: {
     paging?: { cursors?: { after?: string }; next?: string };
   };
   return { items: json.data, nextAfter: json.paging?.next ? (json.paging.cursors?.after ?? null) : null };
+}
+
+export async function fetchCarouselChildren(input: {
+  mediaId: string; accessToken: string;
+}): Promise<GraphMediaItem[]> {
+  const url = new URL(`${GRAPH_BASE}/${input.mediaId}/children`);
+  url.searchParams.set("fields", "id,media_type,media_url,thumbnail_url");
+  url.searchParams.set("access_token", input.accessToken);
+  const res = await fetch(url.toString());
+  if (!res.ok) throw new Error(`Instagram carousel children fetch failed: ${res.status}`);
+  const json = (await res.json()) as { data: GraphMediaItem[] };
+  return json.data;
 }
