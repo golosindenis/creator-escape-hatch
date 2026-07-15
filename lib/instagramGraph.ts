@@ -92,6 +92,6 @@ export async function fetchCarouselChildren(input: {
   url.searchParams.set("access_token", input.accessToken);
   const res = await fetch(url.toString());
   if (!res.ok) throw new Error(`Instagram carousel children fetch failed: ${res.status}`);
-  const json = (await res.json()) as { data: GraphMediaItem[] };
-  return json.data;
+  const json = (await res.json()) as { data?: GraphMediaItem[] };
+  return Array.isArray(json.data) ? json.data : [];
 }

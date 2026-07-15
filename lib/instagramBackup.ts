@@ -103,9 +103,13 @@ export async function syncInstagramMedia(pageId: string): Promise<SyncResult> {
         // overwhelming majority on a repeat sync) skip straight past
         // without an extra DB round trip.
         if (item.media_type === "CAROUSEL_ALBUM") {
-          const childCount = await countMediaChildren(existingRowId);
-          if (needsChildBackfill(item.media_type, childCount)) {
-            await backUpCarouselChildren({ pageId, parentMediaId: existingRowId, igMediaId: item.id, accessToken });
+          try {
+            const childCount = await countMediaChildren(existingRowId);
+            if (needsChildBackfill(item.media_type, childCount)) {
+              await backUpCarouselChildren({ pageId, parentMediaId: existingRowId, igMediaId: item.id, accessToken });
+            }
+          } catch {
+            // Leave this carousel as a backfill candidate for the next sync.
           }
         }
         continue;
